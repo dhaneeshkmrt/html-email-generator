@@ -6,6 +6,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
 import { EmailBuilderService } from '../../core/services/email-builder.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -22,7 +25,10 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatCardModule
+    MatCardModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
   template: `
     <div class="email-builder-container">
@@ -33,6 +39,10 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
           <button mat-button (click)="clearCanvas()">
             <mat-icon>clear</mat-icon>
             Clear
+          </button>
+          <button mat-button (click)="saveTemplate()">
+            <mat-icon>save</mat-icon>
+            Save Template
           </button>
           <button mat-button (click)="exportHTML()">
             <mat-icon>download</mat-icon>
@@ -131,8 +141,56 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
 
                   <!-- Container Component -->
                   <div *ngSwitchCase="ComponentType.CONTAINER"
-                       [ngStyle]="component.styles">
-                    <!-- Nested components would go here -->
+                       [ngStyle]="component.styles"
+                       class="droppable-container"
+                       cdkDropList
+                       [cdkDropListData]="component.children || []"
+                       (cdkDropListDropped)="onContainerDrop($event, component.id)">
+                    <div *ngFor="let child of component.children; trackBy: trackById"
+                         class="nested-component"
+                         cdkDrag
+                         [cdkDragData]="child">
+                      <ng-container [ngTemplateOutlet]="componentTemplate" [ngTemplateOutletContext]="{component: child}"></ng-container>
+                    </div>
+                    <div *ngIf="!component.children?.length" class="drop-zone">
+                      Drop components here
+                    </div>
+                  </div>
+
+                  <!-- Row Layout Component -->
+                  <div *ngSwitchCase="ComponentType.ROW"
+                       [ngStyle]="component.styles"
+                       class="row-layout droppable-container"
+                       cdkDropList
+                       [cdkDropListData]="component.children || []"
+                       (cdkDropListDropped)="onContainerDrop($event, component.id)">
+                    <div *ngFor="let child of component.children; trackBy: trackById"
+                         class="row-item"
+                         cdkDrag
+                         [cdkDragData]="child">
+                      <ng-container [ngTemplateOutlet]="componentTemplate" [ngTemplateOutletContext]="{component: child}"></ng-container>
+                    </div>
+                    <div *ngIf="!component.children?.length" class="drop-zone">
+                      Drop components in this row
+                    </div>
+                  </div>
+
+                  <!-- Column Layout Component -->
+                  <div *ngSwitchCase="ComponentType.COLUMN"
+                       [ngStyle]="component.styles"
+                       class="column-layout droppable-container"
+                       cdkDropList
+                       [cdkDropListData]="component.children || []"
+                       (cdkDropListDropped)="onContainerDrop($event, component.id)">
+                    <div *ngFor="let child of component.children; trackBy: trackById"
+                         class="column-item"
+                         cdkDrag
+                         [cdkDragData]="child">
+                      <ng-container [ngTemplateOutlet]="componentTemplate" [ngTemplateOutletContext]="{component: child}"></ng-container>
+                    </div>
+                    <div *ngIf="!component.children?.length" class="drop-zone">
+                      Drop components in columns
+                    </div>
                   </div>
                 </div>
 
@@ -181,6 +239,52 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
         </mat-sidenav>
       </mat-sidenav-container>
     </div>
+
+    <!-- Template for recursive component rendering -->
+    <ng-template #componentTemplate let-component="component">
+      <div [ngSwitch]="component.type" class="nested-component-content">
+        <!-- Text Component -->
+        <p *ngSwitchCase="ComponentType.TEXT" [ngStyle]="component.styles">
+          {{ component.properties.content }}
+        </p>
+
+        <!-- TextArea Component -->
+        <div *ngSwitchCase="ComponentType.TEXTAREA" [ngStyle]="component.styles" [innerHTML]="component.properties.content">
+        </div>
+
+        <!-- Link Component -->
+        <a *ngSwitchCase="ComponentType.LINK" [href]="component.properties.url" [ngStyle]="component.styles">
+          {{ component.properties.content }}
+        </a>
+
+        <!-- Image Component -->
+        <img *ngSwitchCase="ComponentType.IMAGE"
+             [src]="component.properties.src || '/assets/placeholder-image.svg'"
+             [alt]="component.properties.alt"
+             [ngStyle]="component.styles">
+
+        <!-- Code Component -->
+        <pre *ngSwitchCase="ComponentType.CODE" [ngStyle]="component.styles"><code>{{ component.properties.content }}</code></pre>
+
+        <!-- Button Component -->
+        <a *ngSwitchCase="ComponentType.BUTTON"
+           [href]="component.properties.url"
+           [ngStyle]="component.styles"
+           class="button-component">
+          {{ component.properties.content }}
+        </a>
+
+        <!-- Divider Component -->
+        <hr *ngSwitchCase="ComponentType.DIVIDER" [ngStyle]="component.styles">
+
+        <!-- Nested containers -->
+        <div *ngSwitchDefault [ngStyle]="component.styles">
+          <ng-container *ngFor="let child of component.children">
+            <ng-container [ngTemplateOutlet]="componentTemplate" [ngTemplateOutletContext]="{component: child}"></ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </ng-template>
   `,
   styles: [`
     .email-builder-container {
@@ -397,24 +501,112 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
     ::ng-deep .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
       transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
     }
+
+    /* Layout Components */
+    .droppable-container {
+      min-height: 60px;
+      border: 2px dashed transparent;
+      border-radius: 4px;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .droppable-container:hover {
+      border-color: #e0e0e0;
+    }
+
+    .droppable-container.cdk-drop-list-receiving {
+      border-color: #1976d2;
+      background: rgba(25, 118, 210, 0.05);
+    }
+
+    .drop-zone {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60px;
+      color: #999;
+      font-style: italic;
+      border: 2px dashed #e0e0e0;
+      border-radius: 4px;
+      margin: 8px;
+    }
+
+    .row-layout {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .row-item {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .column-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .column-item {
+      min-height: 50px;
+    }
+
+    .nested-component {
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .nested-component-content {
+      pointer-events: none;
+    }
+
+    /* Component Library Grouping */
+    .component-library {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .component-category {
+      margin-bottom: 16px;
+    }
+
+    .component-category h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
   `]
 })
 export class EmailBuilderComponent {
   protected readonly builderService = inject(EmailBuilderService);
   protected readonly themeService = inject(ThemeService);
   private readonly exportService = inject(ExportService);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly ComponentType = ComponentType;
 
   protected readonly availableComponents = [
-    { type: ComponentType.TEXT, label: 'Text', icon: 'text_fields' },
-    { type: ComponentType.TEXTAREA, label: 'Paragraph', icon: 'subject' },
-    { type: ComponentType.LINK, label: 'Link', icon: 'link' },
-    { type: ComponentType.IMAGE, label: 'Image', icon: 'image' },
-    { type: ComponentType.CODE, label: 'Code Block', icon: 'code' },
-    { type: ComponentType.BUTTON, label: 'Button', icon: 'smart_button' },
-    { type: ComponentType.DIVIDER, label: 'Divider', icon: 'horizontal_rule' },
-    { type: ComponentType.CONTAINER, label: 'Container', icon: 'crop_free' }
+    // Content Components
+    { type: ComponentType.TEXT, label: 'Text', icon: 'text_fields', category: 'content' },
+    { type: ComponentType.TEXTAREA, label: 'Paragraph', icon: 'subject', category: 'content' },
+    { type: ComponentType.LINK, label: 'Link', icon: 'link', category: 'content' },
+    { type: ComponentType.IMAGE, label: 'Image', icon: 'image', category: 'content' },
+    { type: ComponentType.CODE, label: 'Code Block', icon: 'code', category: 'content' },
+    { type: ComponentType.BUTTON, label: 'Button', icon: 'smart_button', category: 'content' },
+    { type: ComponentType.DIVIDER, label: 'Divider', icon: 'horizontal_rule', category: 'content' },
+
+    // Layout Components
+    { type: ComponentType.CONTAINER, label: 'Container', icon: 'crop_free', category: 'layout' },
+    { type: ComponentType.ROW, label: 'Row Layout', icon: 'view_stream', category: 'layout' },
+    { type: ComponentType.COLUMN, label: 'Column Layout', icon: 'view_column', category: 'layout' }
   ];
 
   onDragStart(componentType: { type: ComponentType }): void {
@@ -469,5 +661,44 @@ export class EmailBuilderComponent {
 
   trackById(index: number, item: EmailComponent): string {
     return item.id;
+  }
+
+  onContainerDrop(event: CdkDragDrop<EmailComponent[]>, containerId: string): void {
+    if (event.previousContainer !== event.container) {
+      // Adding from component library or moving from another container
+      const draggedData = event.item.data;
+
+      if (draggedData && draggedData.type) {
+        // From component library
+        const newComponent = this.builderService.createComponentFromType(draggedData.type);
+        this.builderService.addComponentToContainer(containerId, newComponent);
+      } else if (draggedData.id) {
+        // Moving existing component - this would need more complex logic
+        // For now, let's create a copy
+        const newComponent = { ...draggedData, id: this.generateId() };
+        this.builderService.addComponentToContainer(containerId, newComponent);
+      }
+    } else {
+      // Reordering within the same container
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    }
+  }
+
+  saveTemplate(): void {
+    const components = this.builderService.components();
+    if (components.length === 0) {
+      return;
+    }
+
+    // Create a simple dialog for template name
+    const templateName = prompt('Enter template name:', 'My Template');
+    if (templateName && templateName.trim()) {
+      const template = this.builderService.saveTemplate(templateName.trim());
+      alert(`Template "${template.name}" saved successfully!`);
+    }
+  }
+
+  private generateId(): string {
+    return Math.random().toString(36).substr(2, 9);
   }
 }

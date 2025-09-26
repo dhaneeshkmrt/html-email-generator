@@ -13,15 +13,19 @@ Angular-based web application for creating HTML email templates for weekly Angul
 ## Core Features
 
 ### 1. Drag & Drop Component System
-- [ ] Universal drag-drop components (Text, TextArea, Link, Image, Code Block, Divider, Button)
-- [ ] Theme inheritance for all components
+- [x] Universal drag-drop components (Text, TextArea, Link, Image, Code Block, Divider, Button)
+- [x] Layout components (Row, Column, Container)
+- [x] Nested drag-drop functionality
+- [x] Component library with drag-drop interface
+- [x] Canvas with proper drop zones
+- [x] Theme inheritance for all components
 - [ ] Individual style overrides per component
 - [ ] Style inspector panel for component customization
 
 ### 2. Theme System
-- [ ] Base theme files (JSON/TypeScript)
-- [ ] Company green theme as primary
-- [ ] Component-specific theme mappings
+- [x] Base theme files (JSON/TypeScript)
+- [x] Company green theme as primary
+- [x] Component-specific theme mappings
 - [ ] Real-time theme switching
 
 ### 3. Style Override System
@@ -30,59 +34,70 @@ Angular-based web application for creating HTML email templates for weekly Angul
 - [ ] Spacing controls (padding, margin with individual side controls)
 - [ ] Border controls (width, style, radius, color)
 - [ ] Layout controls (alignment, width, height, display properties)
+- [ ] Advanced CSS properties (box-shadow, opacity, transform, transition)
+- [ ] Background properties (images, gradients, patterns)
+- [ ] Custom CSS properties editor
+- [ ] Email-safe CSS validation and fallback suggestions
+- [ ] CSS class support and style presets
 
 ### 4. Component Library
-- [ ] Text Component (Headers H1-H6, paragraphs, spans)
-- [ ] TextArea Component (Multi-line with formatting toolbar)
-- [ ] Link Component (URLs, email links, styled buttons)
-- [ ] Image Component (Upload, resize, alignment, alt-text)
-- [ ] Code Component (Syntax highlighting, multiple languages)
-- [ ] Container Components (Sections, columns, spacers)
+- [x] Text Component (Headers H1-H6, paragraphs, spans)
+- [x] TextArea Component (Multi-line with formatting toolbar)
+- [x] Link Component (URLs, email links, styled buttons)
+- [x] Image Component (Upload, resize, alignment, alt-text)
+- [x] Code Component (Syntax highlighting, multiple languages)
+- [x] Button Component (CTA buttons with styling)
+- [x] Divider Component (Visual separators)
+- [x] Container Components (Sections, columns, spacers)
+- [x] Row/Column Layout Components (Grid-based layouts)
 
 ### 5. User Interface Layout
-- [ ] Left Panel: Component library with drag-drop elements
-- [ ] Center Panel: Canvas with real-time editing and preview
+- [x] Left Panel: Component library with drag-drop elements
+- [x] Center Panel: Canvas with real-time editing and preview
 - [ ] Right Panel: Style inspector and theme controls
 - [ ] Bottom Panel: Device preview switcher (desktop, tablet, mobile)
+- [x] Header navigation and toolbar
 
 ### 6. Export & Email Compatibility
-- [ ] HTML generation with table-based layouts
-- [ ] Inline CSS conversion
+- [x] HTML generation with table-based layouts
+- [x] Inline CSS conversion
 - [ ] Email client compatibility checker
-- [ ] Multiple export formats (HTML file, raw HTML, email platform integration)
-- [ ] Template saving and library
+- [x] Multiple export formats (HTML file, raw HTML, email platform integration)
+- [x] Template saving and library
+- [x] LocalStorage persistence
+- [x] Auto-save functionality
 
 ## Development Phases
 
 ### Phase 1: Foundation & Setup
-- [ ] Angular project initialization
-- [ ] Install dependencies (Angular Material, Tailwind, CDK)
-- [ ] Configure ESLint
-- [ ] Basic project structure setup
-- [ ] Routing configuration
+- [x] Angular project initialization
+- [x] Install dependencies (Angular Material, Tailwind, CDK)
+- [x] Configure ESLint
+- [x] Basic project structure setup
+- [x] Routing configuration
 
 ### Phase 2: Core Architecture
-- [ ] Theme service implementation
-- [ ] Base component architecture
-- [ ] Drag-drop canvas setup
-- [ ] Basic component rendering
+- [x] Theme service implementation
+- [x] Base component architecture
+- [x] Drag-drop canvas setup
+- [x] Basic component rendering
 
 ### Phase 3: Component Development
-- [ ] Individual component implementations
+- [x] Individual component implementations
 - [ ] Style override system
 - [ ] Style inspector panel
-- [ ] Theme inheritance system
+- [x] Theme inheritance system
 
 ### Phase 4: Advanced Features
 - [ ] Rich text editing
-- [ ] Image handling
-- [ ] Code syntax highlighting
-- [ ] Template library
+- [x] Image handling
+- [x] Code syntax highlighting
+- [x] Template library
 
 ### Phase 5: Export & Polish
-- [ ] HTML email generation engine
+- [x] HTML email generation engine
 - [ ] Email compatibility testing
-- [ ] Export functionality
+- [x] Export functionality
 - [ ] User experience improvements
 
 ## Project Structure (Planned)

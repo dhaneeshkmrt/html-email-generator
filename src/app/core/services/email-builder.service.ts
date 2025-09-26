@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, effect } from '@angular/core';
 import { EmailComponent, ComponentType, ComponentProperties, ComponentStyles } from '../models/component.model';
 import { EmailTemplate } from '../models/template.model';
+import { LocalStorageService } from './local-storage.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,10 +10,25 @@ export class EmailBuilderService {
   private readonly _components = signal<EmailComponent[]>([]);
   private readonly _selectedComponent = signal<EmailComponent | null>(null);
   private readonly _draggedComponent = signal<EmailComponent | null>(null);
+  private readonly _currentTemplate = signal<EmailTemplate | null>(null);
 
   readonly components = this._components.asReadonly();
   readonly selectedComponent = this._selectedComponent.asReadonly();
   readonly draggedComponent = this._draggedComponent.asReadonly();
+  readonly currentTemplate = this._currentTemplate.asReadonly();
+
+  constructor(private localStorageService: LocalStorageService) {
+    // Auto-save effect
+    effect(() => {
+      const components = this._components();
+      if (components.length > 0) {
+        this.autoSave();
+      }
+    });
+
+    // Load any existing work on initialization
+    this.loadCurrentWork();
+  }
 
   addComponent(component: EmailComponent, index?: number): void {
     const components = this._components();
@@ -69,11 +85,6 @@ export class EmailBuilderService {
     };
   }
 
-  loadTemplate(template: EmailTemplate): void {
-    this._components.set(template.components);
-    this._selectedComponent.set(null);
-  }
-
   exportToTemplate(name: string, description?: string): EmailTemplate {
     return {
       id: this.generateId(),
@@ -88,6 +99,71 @@ export class EmailBuilderService {
       createdAt: new Date(),
       updatedAt: new Date()
     };
+  }
+
+  // Template management methods
+  saveTemplate(name: string, description?: string): EmailTemplate {
+    const template = this.exportToTemplate(name, description);
+    this.localStorageService.saveTemplate(template);
+    this._currentTemplate.set(template);
+    return template;
+  }
+
+  loadTemplate(template: EmailTemplate): void {
+    this._components.set(template.components);
+    this._selectedComponent.set(null);
+    this._currentTemplate.set(template);
+    this.localStorageService.clearCurrentWork();
+  }
+
+  getSavedTemplates(): EmailTemplate[] {
+    return this.localStorageService.getTemplates();
+  }
+
+  deleteTemplate(templateId: string): void {
+    this.localStorageService.deleteTemplate(templateId);
+  }
+
+  // Auto-save functionality
+  private autoSave(): void {
+    const template = {
+      name: 'Auto-saved work',
+      components: this._components(),
+      theme: 'default'
+    };
+    this.localStorageService.saveCurrentWork(template);
+  }
+
+  private loadCurrentWork(): void {
+    const savedWork = this.localStorageService.getCurrentWork();
+    if (savedWork && savedWork.components && savedWork.components.length > 0) {
+      this._components.set(savedWork.components);
+    }
+  }
+
+  // Layout helper methods
+  addComponentToContainer(containerId: string, component: EmailComponent): void {
+    const components = this._components();
+    const updatedComponents = this.addComponentToContainerRecursively(components, containerId, component);
+    this._components.set(updatedComponents);
+  }
+
+  private addComponentToContainerRecursively(components: EmailComponent[], containerId: string, newComponent: EmailComponent): EmailComponent[] {
+    return components.map(component => {
+      if (component.id === containerId) {
+        return {
+          ...component,
+          children: [...(component.children || []), newComponent]
+        };
+      }
+      if (component.children) {
+        return {
+          ...component,
+          children: this.addComponentToContainerRecursively(component.children, containerId, newComponent)
+        };
+      }
+      return component;
+    });
   }
 
   private generateId(): string {
@@ -112,6 +188,18 @@ export class EmailBuilderService {
         return {};
       case ComponentType.CONTAINER:
         return {};
+      case ComponentType.ROW:
+        return {
+          alignment: 'stretch',
+          justification: 'start',
+          columnGap: '16px'
+        };
+      case ComponentType.COLUMN:
+        return {
+          columns: 2,
+          columnGap: '16px',
+          rowGap: '16px'
+        };
       default:
         return {};
     }
@@ -154,6 +242,24 @@ export class EmailBuilderService {
         return {
           backgroundColor: '#ffffff',
           padding: '16px',
+          margin: '0 0 16px 0'
+        };
+      case ComponentType.ROW:
+        return {
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          justifyContent: 'flex-start',
+          gap: '16px',
+          width: '100%',
+          margin: '0 0 16px 0'
+        };
+      case ComponentType.COLUMN:
+        return {
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '16px',
+          width: '100%',
           margin: '0 0 16px 0'
         };
       default:

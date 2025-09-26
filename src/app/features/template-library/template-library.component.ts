@@ -248,7 +248,7 @@ export class TemplateLibraryComponent {
     }
   ]);
 
-  protected readonly customTemplates = signal<EmailTemplate[]>([]);
+  protected readonly customTemplates = signal<EmailTemplate[]>(this.builderService.getSavedTemplates());
 
   loadTemplate(template: EmailTemplate): void {
     this.builderService.loadTemplate(template);
@@ -256,8 +256,8 @@ export class TemplateLibraryComponent {
   }
 
   deleteTemplate(templateId: string): void {
-    const templates = this.customTemplates().filter(t => t.id !== templateId);
-    this.customTemplates.set(templates);
+    this.builderService.deleteTemplate(templateId);
+    this.customTemplates.set(this.builderService.getSavedTemplates());
   }
 
   saveCurrentTemplate(): void {
@@ -266,9 +266,12 @@ export class TemplateLibraryComponent {
       return;
     }
 
-    const template = this.builderService.exportToTemplate('Custom Template', 'Saved from current work');
-    const templates = [...this.customTemplates(), template];
-    this.customTemplates.set(templates);
+    const templateName = prompt('Enter template name:', 'Custom Template');
+    if (templateName && templateName.trim()) {
+      const template = this.builderService.saveTemplate(templateName.trim(), 'Saved from current work');
+      this.customTemplates.set(this.builderService.getSavedTemplates());
+      alert(`Template "${template.name}" saved successfully!`);
+    }
   }
 
   createNewTemplate(): void {

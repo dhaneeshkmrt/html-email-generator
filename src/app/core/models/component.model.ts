@@ -14,7 +14,9 @@ export enum ComponentType {
   CODE = 'code',
   BUTTON = 'button',
   DIVIDER = 'divider',
-  CONTAINER = 'container'
+  CONTAINER = 'container',
+  ROW = 'row',
+  COLUMN = 'column'
 }
 
 export interface ComponentProperties {
@@ -24,6 +26,12 @@ export interface ComponentProperties {
   src?: string;
   language?: string;
   placeholder?: string;
+  // Layout properties
+  columns?: number;
+  columnGap?: string;
+  rowGap?: string;
+  alignment?: 'start' | 'center' | 'end' | 'stretch';
+  justification?: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
   [key: string]: unknown;
 }
 

@@ -67,6 +67,29 @@ export class ExportService {
         return `<div style="${styles}">${childrenHTML}</div>`;
       }
 
+      case ComponentType.ROW: {
+        const childrenHTML = component.children?.map(child => this.componentToHTML(child)).join('\n') || '';
+        // Use table for email compatibility
+        const cellStyles = 'vertical-align: top; padding: 0;';
+        const cells = component.children?.map(child =>
+          `<td style="${cellStyles}">${this.componentToHTML(child)}</td>`
+        ).join('') || '';
+        return `<table style="${styles}; border-collapse: collapse;" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table>`;
+      }
+
+      case ComponentType.COLUMN: {
+        const childrenHTML = component.children?.map(child => this.componentToHTML(child)).join('\n') || '';
+        const columns = component.properties.columns || 2;
+        const columnWidth = `${100 / columns}%`;
+
+        // Create table-based column layout for email compatibility
+        const cells = component.children?.map(child =>
+          `<td style="vertical-align: top; width: ${columnWidth}; padding: 0;">${this.componentToHTML(child)}</td>`
+        ).join('') || '';
+
+        return `<table style="${styles}; border-collapse: collapse; width: 100%;" cellpadding="0" cellspacing="0"><tr>${cells}</tr></table>`;
+      }
+
       default:
         return '';
     }
