@@ -13,7 +13,8 @@ import { MatInputModule } from '@angular/material/input';
 import { EmailBuilderService } from '../../core/services/email-builder.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { ExportService } from '../../core/services/export.service';
-import { ComponentType, EmailComponent } from '../../core/models/component.model';
+import { ComponentType, EmailComponent, ComponentStyles } from '../../core/models/component.model';
+import { StyleEditorComponent } from '../../shared/components/style-editor/style-editor.component';
 
 @Component({
   selector: 'app-email-builder',
@@ -28,7 +29,8 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
     MatCardModule,
     MatDialogModule,
     MatFormFieldModule,
-    MatInputModule
+    MatInputModule,
+    StyleEditorComponent
   ],
   template: `
     <div class="email-builder-container">
@@ -219,20 +221,106 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
           </div>
           <div class="style-inspector">
             <div *ngIf="builderService.selectedComponent(); else noSelection">
-              <mat-card>
+              <!-- Properties Editor -->
+              <mat-card class="properties-card">
                 <mat-card-header>
-                  <mat-card-title>{{ getComponentTypeLabel(builderService.selectedComponent()!.type) }}</mat-card-title>
+                  <mat-card-title>Properties</mat-card-title>
+                  <mat-card-subtitle>{{ getComponentTypeLabel(builderService.selectedComponent()!.type) }}</mat-card-subtitle>
                 </mat-card-header>
                 <mat-card-content>
-                  <!-- Style controls will be implemented in the next phase -->
-                  <p>Style controls coming soon...</p>
+                  <div [ngSwitch]="builderService.selectedComponent()!.type" class="property-controls">
+                    <!-- Text/TextArea Properties -->
+                    <div *ngSwitchCase="ComponentType.TEXT">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Content</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.content"
+                               (input)="updateComponentProperty('content', $event.target.value)">
+                      </mat-form-field>
+                    </div>
+
+                    <div *ngSwitchCase="ComponentType.TEXTAREA">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Content</mat-label>
+                        <textarea matInput
+                                  rows="4"
+                                  [value]="builderService.selectedComponent()!.properties.content"
+                                  (input)="updateComponentProperty('content', $any($event.target).value)"></textarea>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Link Properties -->
+                    <div *ngSwitchCase="ComponentType.LINK">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Text</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.content"
+                               (input)="updateComponentProperty('content', $event.target.value)">
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>URL</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.url"
+                               (input)="updateComponentProperty('url', $event.target.value)">
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Image Properties -->
+                    <div *ngSwitchCase="ComponentType.IMAGE">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Image URL</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.src"
+                               (input)="updateComponentProperty('src', $event.target.value)">
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Alt Text</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.alt"
+                               (input)="updateComponentProperty('alt', $event.target.value)">
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Code Properties -->
+                    <div *ngSwitchCase="ComponentType.CODE">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Code</mat-label>
+                        <textarea matInput
+                                  rows="6"
+                                  [value]="builderService.selectedComponent()!.properties.content"
+                                  (input)="updateComponentProperty('content', $any($event.target).value)"></textarea>
+                      </mat-form-field>
+                    </div>
+
+                    <!-- Button Properties -->
+                    <div *ngSwitchCase="ComponentType.BUTTON">
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Button Text</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.content"
+                               (input)="updateComponentProperty('content', $event.target.value)">
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>URL</mat-label>
+                        <input matInput
+                               [value]="builderService.selectedComponent()!.properties.url"
+                               (input)="updateComponentProperty('url', $event.target.value)">
+                      </mat-form-field>
+                    </div>
+                  </div>
                 </mat-card-content>
               </mat-card>
+
+              <!-- Style Editor -->
+              <app-style-editor
+                [component]="builderService.selectedComponent()!"
+                (styleChange)="onStyleChange($event)">
+              </app-style-editor>
             </div>
             <ng-template #noSelection>
               <div class="no-selection">
                 <mat-icon>style</mat-icon>
-                <p>Select a component to edit its styles</p>
+                <p>Select a component to edit its properties and styles</p>
               </div>
             </ng-template>
           </div>
@@ -583,6 +671,20 @@ import { ComponentType, EmailComponent } from '../../core/models/component.model
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
+    .properties-card {
+      margin-bottom: 16px;
+    }
+
+    .property-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .full-width {
+      width: 100%;
+    }
   `]
 })
 export class EmailBuilderComponent {
@@ -696,6 +798,18 @@ export class EmailBuilderComponent {
       const template = this.builderService.saveTemplate(templateName.trim());
       alert(`Template "${template.name}" saved successfully!`);
     }
+  }
+
+  updateComponentProperty(propertyKey: string, value: any): void {
+    const selectedComponent = this.builderService.selectedComponent();
+    if (selectedComponent) {
+      const updatedProperties = { ...selectedComponent.properties, [propertyKey]: value };
+      this.builderService.updateComponent(selectedComponent.id, { properties: updatedProperties });
+    }
+  }
+
+  onStyleChange(event: { componentId: string; styles: ComponentStyles }): void {
+    this.builderService.updateComponent(event.componentId, { styles: event.styles });
   }
 
   private generateId(): string {

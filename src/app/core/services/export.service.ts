@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
-import { EmailComponent, ComponentType } from '../models/component.model';
+import { EmailComponent, ComponentType, ComponentStyles } from '../models/component.model';
+import { CSSValidatorService } from './css-validator.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExportService {
+
+  constructor(private cssValidator: CSSValidatorService) {}
 
   exportToHTML(components: EmailComponent[]): string {
     const htmlContent = this.generateHTMLContent(components);
@@ -13,6 +16,44 @@ export class ExportService {
 
   exportToRawHTML(components: EmailComponent[]): string {
     return this.generateHTMLContent(components);
+  }
+
+  exportToEmailSafeHTML(components: EmailComponent[]): string {
+    // Generate HTML with only email-safe CSS
+    const safeComponents = components.map(component => ({
+      ...component,
+      styles: this.cssValidator.generateEmailSafeCSS(component.styles)
+    }));
+
+    const htmlContent = this.generateHTMLContent(safeComponents);
+    return this.wrapInEmailTemplate(htmlContent);
+  }
+
+  exportWithCompatibilityReport(components: EmailComponent[]): { html: string; report: any[] } {
+    const compatibilityReport: any[] = [];
+
+    const processedComponents = components.map(component => {
+      const compatibility = this.cssValidator.checkEmailCompatibility(component.styles);
+
+      if (!compatibility.compatible) {
+        compatibilityReport.push({
+          componentId: component.id,
+          componentType: component.type,
+          issues: compatibility.issues,
+          appliedFallbacks: compatibility.fallbacks
+        });
+      }
+
+      return {
+        ...component,
+        styles: this.cssValidator.generateEmailSafeCSS(component.styles)
+      };
+    });
+
+    const htmlContent = this.generateHTMLContent(processedComponents);
+    const html = this.wrapInEmailTemplate(htmlContent);
+
+    return { html, report: compatibilityReport };
   }
 
   downloadAsFile(content: string, filename: string, contentType = 'text/html'): void {
@@ -32,7 +73,9 @@ export class ExportService {
   }
 
   private componentToHTML(component: EmailComponent): string {
-    const styles = this.stylesToInlineCSS(component.styles);
+    // Convert styles to email-safe CSS first
+    const safeStyles = this.cssValidator.generateEmailSafeCSS(component.styles);
+    const styles = this.stylesToInlineCSS(safeStyles);
 
     switch (component.type) {
       case ComponentType.TEXT:
@@ -96,9 +139,24 @@ export class ExportService {
   }
 
   private stylesToInlineCSS(styles: Record<string, unknown>): string {
-    return Object.entries(styles)
-      .map(([property, value]) => `${this.camelToKebab(property)}: ${value}`)
-      .join('; ');
+    const cssRules: string[] = [];
+
+    // Process standard CSS properties
+    Object.entries(styles).forEach(([property, value]) => {
+      if (property === 'customStyles') {
+        // Handle custom styles separately
+        if (value && typeof value === 'object') {
+          Object.entries(value as Record<string, string>).forEach(([customProp, customValue]) => {
+            cssRules.push(`${this.camelToKebab(customProp)}: ${customValue}`);
+          });
+        }
+      } else if (value !== undefined && value !== null) {
+        // Convert camelCase to kebab-case and add to CSS
+        cssRules.push(`${this.camelToKebab(property)}: ${value}`);
+      }
+    });
+
+    return cssRules.join('; ');
   }
 
   private camelToKebab(str: string): string {

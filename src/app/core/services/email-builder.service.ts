@@ -2,6 +2,7 @@ import { Injectable, signal, effect } from '@angular/core';
 import { EmailComponent, ComponentType, ComponentProperties, ComponentStyles } from '../models/component.model';
 import { EmailTemplate } from '../models/template.model';
 import { LocalStorageService } from './local-storage.service';
+import { CSSValidatorService } from './css-validator.service';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +18,10 @@ export class EmailBuilderService {
   readonly draggedComponent = this._draggedComponent.asReadonly();
   readonly currentTemplate = this._currentTemplate.asReadonly();
 
-  constructor(private localStorageService: LocalStorageService) {
+  constructor(
+    private localStorageService: LocalStorageService,
+    private cssValidator: CSSValidatorService
+  ) {
     // Auto-save effect
     effect(() => {
       const components = this._components();
@@ -80,8 +84,8 @@ export class EmailBuilderService {
     return {
       id: this.generateId(),
       type,
-      properties: this.getDefaultPropertiesForType(type),
-      styles: this.getDefaultStylesForType(type)
+      properties: this.getDefaultPropertiesForType(type) as ComponentProperties,
+      styles: this.getDefaultStylesForType(type) as ComponentStyles
     };
   }
 
@@ -193,16 +197,97 @@ export class EmailBuilderService {
           alignment: 'stretch',
           justification: 'start',
           columnGap: '16px'
-        };
+        } as ComponentProperties;
       case ComponentType.COLUMN:
         return {
           columns: 2,
           columnGap: '16px',
           rowGap: '16px'
-        };
+        } as ComponentProperties;
       default:
-        return {};
+        return {} as ComponentProperties;
     }
+  }
+
+  // Enhanced styling methods
+  updateComponentStyle(componentId: string, styleProperty: keyof ComponentStyles, value: string | number): void {
+    const component = this.findComponentById(componentId);
+    if (component) {
+      const updatedStyles = { ...component.styles, [styleProperty]: value };
+      this.updateComponent(componentId, { styles: updatedStyles });
+    }
+  }
+
+  updateComponentCustomStyles(componentId: string, customStyles: Record<string, string>): void {
+    const component = this.findComponentById(componentId);
+    if (component) {
+      // Validate custom styles
+      const validation = this.cssValidator.validateCustomCSS(customStyles);
+
+      if (validation.isValid) {
+        const updatedStyles = {
+          ...component.styles,
+          customStyles: { ...component.styles.customStyles, ...customStyles }
+        };
+        this.updateComponent(componentId, { styles: updatedStyles });
+      } else {
+        console.warn('Invalid custom styles:', validation.errors);
+        throw new Error(`Invalid CSS: ${validation.errors.join(', ')}`);
+      }
+    }
+  }
+
+  applyStylePreset(componentId: string, preset: ComponentStyles): void {
+    const component = this.findComponentById(componentId);
+    if (component) {
+      // Merge preset with existing styles
+      const mergedStyles = { ...component.styles, ...preset };
+      this.updateComponent(componentId, { styles: mergedStyles });
+    }
+  }
+
+  resetComponentStyles(componentId: string): void {
+    const component = this.findComponentById(componentId);
+    if (component) {
+      const defaultStyles = this.getDefaultStylesForType(component.type);
+      this.updateComponent(componentId, { styles: defaultStyles });
+    }
+  }
+
+  copyStylesBetweenComponents(sourceId: string, targetId: string): void {
+    const sourceComponent = this.findComponentById(sourceId);
+    const targetComponent = this.findComponentById(targetId);
+
+    if (sourceComponent && targetComponent) {
+      this.updateComponent(targetId, { styles: { ...sourceComponent.styles } });
+    }
+  }
+
+  generateEmailSafeStyles(componentId: string): void {
+    const component = this.findComponentById(componentId);
+    if (component) {
+      const safeStyles = this.cssValidator.generateEmailSafeCSS(component.styles);
+      this.updateComponent(componentId, { styles: safeStyles });
+    }
+  }
+
+  private findComponentById(id: string, components?: EmailComponent[]): EmailComponent | null {
+    const componentsToSearch = components || this._components();
+
+    for (const component of componentsToSearch) {
+      if (component.id === id) {
+        return component;
+      }
+
+      if (component.children) {
+        const found = this.findComponentById(id, component.children);
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
   }
 
   private getDefaultStylesForType(type: ComponentType): ComponentStyles {
@@ -214,13 +299,13 @@ export class EmailBuilderService {
           lineHeight: '1.5',
           color: '#111827',
           margin: '0 0 16px 0'
-        };
+        } as ComponentStyles;
       case ComponentType.LINK:
         return {
           color: '#3b82f6',
           textDecoration: 'underline',
           fontSize: '16px'
-        };
+        } as ComponentStyles;
       case ComponentType.BUTTON:
         return {
           backgroundColor: '#3b82f6',
@@ -231,19 +316,19 @@ export class EmailBuilderService {
           border: 'none',
           fontSize: '16px',
           fontWeight: '500'
-        };
+        } as ComponentStyles;
       case ComponentType.DIVIDER:
         return {
           borderTop: '1px solid #e5e7eb',
           margin: '24px 0',
           width: '100%'
-        };
+        } as ComponentStyles;
       case ComponentType.CONTAINER:
         return {
           backgroundColor: '#ffffff',
           padding: '16px',
           margin: '0 0 16px 0'
-        };
+        } as ComponentStyles;
       case ComponentType.ROW:
         return {
           display: 'flex',
@@ -253,7 +338,7 @@ export class EmailBuilderService {
           gap: '16px',
           width: '100%',
           margin: '0 0 16px 0'
-        };
+        } as ComponentStyles;
       case ComponentType.COLUMN:
         return {
           display: 'grid',
@@ -261,9 +346,9 @@ export class EmailBuilderService {
           gap: '16px',
           width: '100%',
           margin: '0 0 16px 0'
-        };
+        } as ComponentStyles;
       default:
-        return {};
+        return {} as ComponentStyles;
     }
   }
 }
