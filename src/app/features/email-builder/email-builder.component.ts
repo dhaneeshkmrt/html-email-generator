@@ -63,7 +63,7 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                cdkDropList
                cdkDropListSortingDisabled
                [cdkDropListData]="availableComponents"
-               [cdkDropListConnectedTo]="['canvas-drop-list']">
+               [cdkDropListConnectedTo]="connectedDropLists">
             <div
               class="component-item"
               *ngFor="let componentType of availableComponents; trackBy: trackByType"
@@ -102,20 +102,20 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                 <div class="component-content" [ngSwitch]="component.type">
                   <!-- Text Component -->
                   <p *ngSwitchCase="ComponentType.TEXT"
-                     [ngStyle]="component.styles">
+                     [ngStyle]="getComponentStyles(component)">
                     {{ component.properties.content }}
                   </p>
 
                   <!-- TextArea Component -->
                   <div *ngSwitchCase="ComponentType.TEXTAREA"
-                       [ngStyle]="component.styles"
+                       [ngStyle]="getComponentStyles(component)"
                        [innerHTML]="component.properties.content">
                   </div>
 
                   <!-- Link Component -->
                   <a *ngSwitchCase="ComponentType.LINK"
                      [href]="component.properties.url"
-                     [ngStyle]="component.styles">
+                     [ngStyle]="getComponentStyles(component)">
                     {{ component.properties.content }}
                   </a>
 
@@ -123,31 +123,34 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                   <img *ngSwitchCase="ComponentType.IMAGE"
                        [src]="component.properties.src || '/assets/placeholder-image.svg'"
                        [alt]="component.properties.alt"
-                       [ngStyle]="component.styles">
+                       [ngStyle]="getComponentStyles(component)">
 
                   <!-- Code Component -->
                   <pre *ngSwitchCase="ComponentType.CODE"
-                       [ngStyle]="component.styles"><code>{{ component.properties.content }}</code></pre>
+                       [ngStyle]="getComponentStyles(component)"><code>{{ component.properties.content }}</code></pre>
 
                   <!-- Button Component -->
                   <a *ngSwitchCase="ComponentType.BUTTON"
                      [href]="component.properties.url"
-                     [ngStyle]="component.styles"
+                     [ngStyle]="getComponentStyles(component)"
                      class="button-component">
                     {{ component.properties.content }}
                   </a>
 
                   <!-- Divider Component -->
                   <hr *ngSwitchCase="ComponentType.DIVIDER"
-                      [ngStyle]="component.styles">
+                      [ngStyle]="getComponentStyles(component)">
 
                   <!-- Container Component -->
                   <div *ngSwitchCase="ComponentType.CONTAINER"
-                       [ngStyle]="component.styles"
+                       [ngStyle]="getComponentStyles(component)"
                        class="droppable-container"
                        cdkDropList
+                       [id]="'container-' + component.id"
                        [cdkDropListData]="component.children || []"
-                       (cdkDropListDropped)="onContainerDrop($event, component.id)">
+                       (cdkDropListDropped)="onContainerDrop($event, component.id)"
+                       (cdkDropListEntered)="onDropListEntered('container', component.id)"
+                       (cdkDropListExited)="onDropListExited('container', component.id)">
                     <div *ngFor="let child of component.children; trackBy: trackById"
                          class="nested-component"
                          cdkDrag
@@ -161,9 +164,10 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
 
                   <!-- Row Layout Component -->
                   <div *ngSwitchCase="ComponentType.ROW"
-                       [ngStyle]="component.styles"
+                       [ngStyle]="getComponentStyles(component)"
                        class="row-layout droppable-container"
                        cdkDropList
+                       [id]="'row-' + component.id"
                        [cdkDropListData]="component.children || []"
                        (cdkDropListDropped)="onContainerDrop($event, component.id)">
                     <div *ngFor="let child of component.children; trackBy: trackById"
@@ -179,9 +183,10 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
 
                   <!-- Column Layout Component -->
                   <div *ngSwitchCase="ComponentType.COLUMN"
-                       [ngStyle]="component.styles"
+                       [ngStyle]="getComponentStyles(component)"
                        class="column-layout droppable-container"
                        cdkDropList
+                       [id]="'column-' + component.id"
                        [cdkDropListData]="component.children || []"
                        (cdkDropListDropped)="onContainerDrop($event, component.id)">
                     <div *ngFor="let child of component.children; trackBy: trackById"
@@ -235,7 +240,7 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                         <mat-label>Content</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.content"
-                               (input)="updateComponentProperty('content', $event.target.value)">
+                               (input)="updateComponentProperty('content', $any($event.target).value)">
                       </mat-form-field>
                     </div>
 
@@ -255,13 +260,13 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                         <mat-label>Text</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.content"
-                               (input)="updateComponentProperty('content', $event.target.value)">
+                               (input)="updateComponentProperty('content', $any($event.target).value)">
                       </mat-form-field>
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>URL</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.url"
-                               (input)="updateComponentProperty('url', $event.target.value)">
+                               (input)="updateComponentProperty('url', $any($event.target).value)">
                       </mat-form-field>
                     </div>
 
@@ -271,13 +276,13 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                         <mat-label>Image URL</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.src"
-                               (input)="updateComponentProperty('src', $event.target.value)">
+                               (input)="updateComponentProperty('src', $any($event.target).value)">
                       </mat-form-field>
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>Alt Text</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.alt"
-                               (input)="updateComponentProperty('alt', $event.target.value)">
+                               (input)="updateComponentProperty('alt', $any($event.target).value)">
                       </mat-form-field>
                     </div>
 
@@ -298,14 +303,55 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
                         <mat-label>Button Text</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.content"
-                               (input)="updateComponentProperty('content', $event.target.value)">
+                               (input)="updateComponentProperty('content', $any($event.target).value)">
                       </mat-form-field>
                       <mat-form-field appearance="outline" class="full-width">
                         <mat-label>URL</mat-label>
                         <input matInput
                                [value]="builderService.selectedComponent()!.properties.url"
-                               (input)="updateComponentProperty('url', $event.target.value)">
+                               (input)="updateComponentProperty('url', $any($event.target).value)">
                       </mat-form-field>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <!-- Custom CSS Editor -->
+              <mat-card class="properties-card">
+                <mat-card-header>
+                  <mat-card-title>Custom CSS</mat-card-title>
+                  <mat-card-subtitle>Add custom CSS properties for advanced styling</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <div class="custom-css-section">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Custom CSS Properties</mat-label>
+                      <textarea matInput
+                                rows="8"
+                                placeholder="color: #ff0000;
+background-color: #f0f0f0;
+border-radius: 10px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                [value]="getCustomCSSText()"
+                                (input)="updateCustomCSS($any($event.target).value)"></textarea>
+                      <mat-hint>Enter CSS properties one per line (e.g., color: red;)</mat-hint>
+                    </mat-form-field>
+
+                    <div class="custom-css-actions">
+                      <button mat-button color="primary" (click)="validateCustomCSS()">
+                        <mat-icon>check_circle</mat-icon>
+                        Validate CSS
+                      </button>
+                      <button mat-button color="warn" (click)="clearCustomCSS()">
+                        <mat-icon>clear</mat-icon>
+                        Clear CSS
+                      </button>
+                    </div>
+
+                    <div *ngIf="cssValidationMessage" class="css-validation-message"
+                         [ngClass]="{'success': cssValidationSuccess, 'error': !cssValidationSuccess}">
+                      <mat-icon>{{ cssValidationSuccess ? 'check_circle' : 'error' }}</mat-icon>
+                      {{ cssValidationMessage }}
                     </div>
                   </div>
                 </mat-card-content>
@@ -332,16 +378,16 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
     <ng-template #componentTemplate let-component="component">
       <div [ngSwitch]="component.type" class="nested-component-content">
         <!-- Text Component -->
-        <p *ngSwitchCase="ComponentType.TEXT" [ngStyle]="component.styles">
+        <p *ngSwitchCase="ComponentType.TEXT" [ngStyle]="getComponentStyles(component)">
           {{ component.properties.content }}
         </p>
 
         <!-- TextArea Component -->
-        <div *ngSwitchCase="ComponentType.TEXTAREA" [ngStyle]="component.styles" [innerHTML]="component.properties.content">
+        <div *ngSwitchCase="ComponentType.TEXTAREA" [ngStyle]="getComponentStyles(component)" [innerHTML]="component.properties.content">
         </div>
 
         <!-- Link Component -->
-        <a *ngSwitchCase="ComponentType.LINK" [href]="component.properties.url" [ngStyle]="component.styles">
+        <a *ngSwitchCase="ComponentType.LINK" [href]="component.properties.url" [ngStyle]="getComponentStyles(component)">
           {{ component.properties.content }}
         </a>
 
@@ -349,24 +395,24 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
         <img *ngSwitchCase="ComponentType.IMAGE"
              [src]="component.properties.src || '/assets/placeholder-image.svg'"
              [alt]="component.properties.alt"
-             [ngStyle]="component.styles">
+             [ngStyle]="getComponentStyles(component)">
 
         <!-- Code Component -->
-        <pre *ngSwitchCase="ComponentType.CODE" [ngStyle]="component.styles"><code>{{ component.properties.content }}</code></pre>
+        <pre *ngSwitchCase="ComponentType.CODE" [ngStyle]="getComponentStyles(component)"><code>{{ component.properties.content }}</code></pre>
 
         <!-- Button Component -->
         <a *ngSwitchCase="ComponentType.BUTTON"
            [href]="component.properties.url"
-           [ngStyle]="component.styles"
+           [ngStyle]="getComponentStyles(component)"
            class="button-component">
           {{ component.properties.content }}
         </a>
 
         <!-- Divider Component -->
-        <hr *ngSwitchCase="ComponentType.DIVIDER" [ngStyle]="component.styles">
+        <hr *ngSwitchCase="ComponentType.DIVIDER" [ngStyle]="getComponentStyles(component)">
 
         <!-- Nested containers -->
-        <div *ngSwitchDefault [ngStyle]="component.styles">
+        <div *ngSwitchDefault [ngStyle]="getComponentStyles(component)">
           <ng-container *ngFor="let child of component.children">
             <ng-container [ngTemplateOutlet]="componentTemplate" [ngTemplateOutletContext]="{component: child}"></ng-container>
           </ng-container>
@@ -592,11 +638,14 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
 
     /* Layout Components */
     .droppable-container {
-      min-height: 60px;
+      min-height: 100px;
       border: 2px dashed transparent;
       border-radius: 4px;
       transition: all 0.2s;
       position: relative;
+      z-index: 1;
+      width: 100%;
+      display: block;
     }
 
     .droppable-container:hover {
@@ -604,8 +653,13 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
     }
 
     .droppable-container.cdk-drop-list-receiving {
-      border-color: #1976d2;
-      background: rgba(25, 118, 210, 0.05);
+      border-color: #1976d2 !important;
+      background: rgba(25, 118, 210, 0.1) !important;
+    }
+
+    .droppable-container.cdk-drop-list-dragging {
+      border-color: #ddd !important;
+      background: rgba(0, 0, 0, 0.02) !important;
     }
 
     .drop-zone {
@@ -618,6 +672,9 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
       border: 2px dashed #e0e0e0;
       border-radius: 4px;
       margin: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      pointer-events: none;
     }
 
     .row-layout {
@@ -636,6 +693,7 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
+      min-height: 100px;
     }
 
     .column-item {
@@ -685,6 +743,59 @@ import { StyleEditorComponent } from '../../shared/components/style-editor/style
     .full-width {
       width: 100%;
     }
+
+    /* Custom CSS Section Styles */
+    .custom-css-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .custom-css-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+    }
+
+    .css-validation-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .css-validation-message.success {
+      background-color: #e8f5e8;
+      color: #2e7d2e;
+      border: 1px solid #c8e6c9;
+    }
+
+    .css-validation-message.error {
+      background-color: #ffeaea;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+    }
+
+    .css-validation-message mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Custom CSS Textarea Styling */
+    .custom-css-section textarea {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .custom-css-section .mat-form-field-hint {
+      font-size: 12px;
+      color: #666;
+    }
   `]
 })
 export class EmailBuilderComponent {
@@ -711,6 +822,42 @@ export class EmailBuilderComponent {
     { type: ComponentType.COLUMN, label: 'Column Layout', icon: 'view_column', category: 'layout' }
   ];
 
+  private _cachedDropLists: string[] = [];
+  private _lastComponentsHash: string = '';
+
+  get connectedDropLists(): string[] {
+    const components = this.builderService.components();
+    const componentsHash = JSON.stringify(components.map(c => ({ id: c.id, type: c.type })));
+
+    // Only recalculate if components changed
+    if (componentsHash !== this._lastComponentsHash) {
+      this._lastComponentsHash = componentsHash;
+      const dropLists = ['canvas-drop-list'];
+
+      const addComponentDropLists = (components: EmailComponent[]) => {
+        components.forEach(component => {
+          if (component.type === ComponentType.CONTAINER) {
+            dropLists.push('container-' + component.id);
+          } else if (component.type === ComponentType.ROW) {
+            dropLists.push('row-' + component.id);
+          } else if (component.type === ComponentType.COLUMN) {
+            dropLists.push('column-' + component.id);
+          }
+
+          if (component.children) {
+            addComponentDropLists(component.children);
+          }
+        });
+      };
+
+      addComponentDropLists(components);
+      this._cachedDropLists = dropLists;
+      console.log('Updated connected drop lists:', dropLists);
+    }
+
+    return this._cachedDropLists;
+  }
+
   onDragStart(componentType: { type: ComponentType }): void {
     const component = this.builderService.createComponentFromType(componentType.type);
     this.builderService.setDraggedComponent(component);
@@ -718,6 +865,14 @@ export class EmailBuilderComponent {
 
   onDragEnd(): void {
     this.builderService.setDraggedComponent(null);
+  }
+
+  onDropListEntered(containerType: string, containerId: string): void {
+    console.log(`Drop list entered: ${containerType}-${containerId}`);
+  }
+
+  onDropListExited(containerType: string, containerId: string): void {
+    console.log(`Drop list exited: ${containerType}-${containerId}`);
   }
 
   onCanvasDrop(event: CdkDragDrop<EmailComponent[]>): void {
@@ -766,22 +921,36 @@ export class EmailBuilderComponent {
   }
 
   onContainerDrop(event: CdkDragDrop<EmailComponent[]>, containerId: string): void {
+    console.log('onContainerDrop called!', {
+      containerId,
+      previousContainer: event.previousContainer.id,
+      currentContainer: event.container.id,
+      dragData: event.item.data
+    });
+
     if (event.previousContainer !== event.container) {
       // Adding from component library or moving from another container
       const draggedData = event.item.data;
+      console.log('Container drop draggedData:', draggedData);
 
-      if (draggedData && draggedData.type) {
-        // From component library
+      if (draggedData && draggedData.type && !draggedData.id) {
+        // From component library - draggedData has { type, label, icon, category }
+        console.log('Creating component from type:', draggedData.type);
         const newComponent = this.builderService.createComponentFromType(draggedData.type);
+        console.log('Created component:', newComponent);
         this.builderService.addComponentToContainer(containerId, newComponent);
-      } else if (draggedData.id) {
-        // Moving existing component - this would need more complex logic
-        // For now, let's create a copy
+        console.log('Added to container:', containerId);
+      } else if (draggedData && draggedData.id) {
+        // Moving existing component - draggedData is an EmailComponent
+        console.log('Moving existing component:', draggedData.id);
         const newComponent = { ...draggedData, id: this.generateId() };
         this.builderService.addComponentToContainer(containerId, newComponent);
+      } else {
+        console.warn('Unknown drag data structure:', draggedData);
       }
     } else {
       // Reordering within the same container
+      console.log('Reordering within container');
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     }
   }
@@ -810,6 +979,168 @@ export class EmailBuilderComponent {
 
   onStyleChange(event: { componentId: string; styles: ComponentStyles }): void {
     this.builderService.updateComponent(event.componentId, { styles: event.styles });
+  }
+
+  // Custom CSS functionality
+  cssValidationMessage: string = '';
+  cssValidationSuccess: boolean = true;
+
+  getCustomCSSText(): string {
+    const selectedComponent = this.builderService.selectedComponent();
+    if (!selectedComponent?.styles?.customStyles) {
+      return '';
+    }
+
+    return Object.entries(selectedComponent.styles.customStyles)
+      .map(([key, value]) => `${key}: ${value};`)
+      .join('\n');
+  }
+
+  updateCustomCSS(cssText: string): void {
+    const selectedComponent = this.builderService.selectedComponent();
+    if (!selectedComponent) {
+      return;
+    }
+
+    const customStyles = this.parseCustomCSS(cssText);
+
+    if (this.cssValidator && this.cssValidator.validateCustomCSS) {
+      const validation = this.cssValidator.validateCustomCSS(customStyles);
+
+      if (validation.isValid) {
+        this.builderService.updateComponentCustomStyles(selectedComponent.id, customStyles);
+        this.cssValidationMessage = '';
+        this.cssValidationSuccess = true;
+      } else {
+        this.cssValidationMessage = `Invalid CSS: ${validation.errors.join(', ')}`;
+        this.cssValidationSuccess = false;
+        // Still apply the styles, but show warning
+        this.builderService.updateComponent(selectedComponent.id, {
+          styles: {
+            ...selectedComponent.styles,
+            customStyles: customStyles
+          }
+        });
+      }
+    } else {
+      // Fallback if validator service is not available
+      this.builderService.updateComponent(selectedComponent.id, {
+        styles: {
+          ...selectedComponent.styles,
+          customStyles: customStyles
+        }
+      });
+    }
+  }
+
+  validateCustomCSS(): void {
+    const selectedComponent = this.builderService.selectedComponent();
+    if (!selectedComponent) {
+      return;
+    }
+
+    const customStyles = selectedComponent.styles.customStyles || {};
+
+    if (Object.keys(customStyles).length === 0) {
+      this.cssValidationMessage = 'No custom CSS to validate';
+      this.cssValidationSuccess = true;
+      return;
+    }
+
+    if (this.cssValidator && this.cssValidator.validateCustomCSS) {
+      const validation = this.cssValidator.validateCustomCSS(customStyles);
+
+      if (validation.isValid) {
+        this.cssValidationMessage = 'CSS is valid!';
+        this.cssValidationSuccess = true;
+      } else {
+        this.cssValidationMessage = `Invalid CSS: ${validation.errors.join(', ')}`;
+        this.cssValidationSuccess = false;
+      }
+    } else {
+      this.cssValidationMessage = 'CSS Validator not available. Styles applied as-is.';
+      this.cssValidationSuccess = true;
+    }
+  }
+
+  clearCustomCSS(): void {
+    const selectedComponent = this.builderService.selectedComponent();
+    if (!selectedComponent) {
+      return;
+    }
+
+    this.builderService.updateComponent(selectedComponent.id, {
+      styles: {
+        ...selectedComponent.styles,
+        customStyles: {}
+      }
+    });
+
+    this.cssValidationMessage = 'Custom CSS cleared';
+    this.cssValidationSuccess = true;
+
+    // Clear the message after 3 seconds
+    setTimeout(() => {
+      this.cssValidationMessage = '';
+    }, 3000);
+  }
+
+  private parseCustomCSS(cssText: string): Record<string, string> {
+    const customStyles: Record<string, string> = {};
+
+    if (!cssText?.trim()) {
+      return customStyles;
+    }
+
+    // Split by lines and process each line
+    const lines = cssText.split('\n').map(line => line.trim()).filter(line => line);
+
+    for (const line of lines) {
+      // Skip comments and empty lines
+      if (line.startsWith('/*') || line.startsWith('//') || !line) {
+        continue;
+      }
+
+      // Find property-value pairs
+      const colonIndex = line.indexOf(':');
+      if (colonIndex > 0) {
+        let property = line.substring(0, colonIndex).trim();
+        let value = line.substring(colonIndex + 1).trim();
+
+        // Remove trailing semicolon
+        if (value.endsWith(';')) {
+          value = value.slice(0, -1).trim();
+        }
+
+        if (property && value) {
+          // Convert kebab-case to camelCase for CSS properties
+          property = this.kebabToCamelCase(property);
+          customStyles[property] = value;
+        }
+      }
+    }
+
+    return customStyles;
+  }
+
+  private kebabToCamelCase(str: string): string {
+    return str.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+  }
+
+  private get cssValidator() {
+    // Access the CSS validator service from the builder service
+    return (this.builderService as any).cssValidator;
+  }
+
+  getComponentStyles(component: EmailComponent): any {
+    const styles = { ...component.styles };
+
+    // Merge custom styles if they exist
+    if (component.styles.customStyles) {
+      Object.assign(styles, component.styles.customStyles);
+    }
+
+    return styles;
   }
 
   private generateId(): string {

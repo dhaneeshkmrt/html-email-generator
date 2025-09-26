@@ -81,12 +81,19 @@ export class EmailBuilderService {
   }
 
   createComponentFromType(type: ComponentType): EmailComponent {
-    return {
+    const component: EmailComponent = {
       id: this.generateId(),
       type,
       properties: this.getDefaultPropertiesForType(type) as ComponentProperties,
       styles: this.getDefaultStylesForType(type) as ComponentStyles
     };
+
+    // Initialize children array for layout components
+    if (type === ComponentType.CONTAINER || type === ComponentType.ROW || type === ComponentType.COLUMN) {
+      component.children = [];
+    }
+
+    return component;
   }
 
   exportToTemplate(name: string, description?: string): EmailTemplate {
