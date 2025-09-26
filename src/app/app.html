@@ -1,4 +1,25 @@
-<h1 class="text-3xl font-bold underline">
-  Hello world!
-</h1>
-<button mat-raised-button color="primary">Click Me</button>
+<div class="app-container">
+  <!-- Navigation Header -->
+  <mat-toolbar color="primary" class="app-header">
+    <span class="app-title">{{ title }}</span>
+    <div class="nav-links">
+      <a mat-button routerLink="/email-builder" routerLinkActive="active-link">
+        <mat-icon>edit</mat-icon>
+        Builder
+      </a>
+      <a mat-button routerLink="/preview" routerLinkActive="active-link">
+        <mat-icon>preview</mat-icon>
+        Preview
+      </a>
+      <a mat-button routerLink="/templates" routerLinkActive="active-link">
+        <mat-icon>folder</mat-icon>
+        Templates
+      </a>
+    </div>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

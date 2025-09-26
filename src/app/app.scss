@@ -1,0 +1,36 @@
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.active-link {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-main {
+  margin-top: 64px; /* Height of mat-toolbar */
+  flex: 1;
+  overflow: hidden;
+}
